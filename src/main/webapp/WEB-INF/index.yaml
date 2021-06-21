@@ -1,0 +1,11 @@
+indexes:
+- kind: PETITION 
+  properties: 
+    - name: friends 
+    - name: age 
+    - name: titre
+    - name: description
+    - name: tags
+    - name: createur
+    - name: compteur
+    - name: dateCreation

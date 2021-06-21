@@ -1,0 +1,28 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+	<a class="navbar-brand" href="#">
+		<img src="img/logo.png" width="30" height="30" alt="">
+	</a>
+	<div class="collapse navbar-collapse" id="navbarSupportedContent">
+		<ul class="navbar-nav mr-auto">
+			<li class="nav-item">
+				<a class="nav-link" href="./index.html">Accueil</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="#">Afficher toutes les petitions</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="#">Crée une petition</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="#">Afficher ses petition</a>
+			</li>
+		</ul>
+		<form class="form-inline mx-auto">
+    		<input class="form-control" type="search" placeholder="Search" aria-label="Search"></input>
+    		<button class="btn btn-outline-info" type="submit">Search</button>
+    	</form>
+    	<div class="g-signin2" id="login" data-onsuccess="onSignIn"></div>
+
+		<button type="button" class="btn btn-danger d-none" id="logout" onclick="signOut();">Déconnecter</button>
+    </div>
+</nav>

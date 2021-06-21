@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+	<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+	<meta name="google-signin-client_id" content="289430924600-3ph9h4ev18vqqsb2uv0u9l7ger5ge7ic.apps.googleusercontent.com">
+
+	<title>TinyPet</title>
+
+	<!-- Import fichier js-->
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>
+	<script src="https://unpkg.com/mithril/mithril.js"></script>
+	<script type="text/javascript">
+
+	</script>
+
+	<!-- Import fichier css-->
+	<link rel="stylesheet" type="text/css" href="/css/style.css">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="/">
+			<img src="img/logo.png" width="30" height="30" alt="">
+		</a>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item">
+					<a class="nav-link" href="/">Accueil</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="#!/allPetition">Afficher toutes les petitions</a>
+				</li>
+				<li class="nav-item d-none" id="create_petition">
+					<a class="nav-link" href="#!/createPetition">Crée une petition</a>
+				</li>
+				<li class="nav-item d-none" id="display_petition">
+					<a class="nav-link" href="#!/myPetition">Afficher ses petitions</a>
+				</li>
+			</ul>
+	    	<div class="g-signin2" id="login" data-onsuccess="onSignIn"></div>
+
+			<button type="button" class="btn btn-danger d-none" id="logout" onclick="signOut();">Déconnecter</button>
+	    </div>
+	</nav>
+<!-- 	<h1 id="title_page">dsfsdf</h1> -->
+	<!-- <li class="test"><a href='/_ah/api/petitionApi/v1/populateRepository'>install petition like data (long)</a></li>
+	<li class="test"><a href='/_ah/api/petitionApi/v1/getAllPetition'>Get 1000 signatures</a></li>
+	<li class="test"><a href='/_ah/api/petitionApi/v1/getFirstfivepetition'>Get 5 signatures</a></li>
+	<li class="test"><a href='/_ah/api/petitionApi/v1/cleanRepository'>Vider le repo</a></li> -->
+
+
+	<div id="page_data"></div> 
+
+	<script type="text/javascript">
+
+		function onSignIn(googleUser) {
+
+			var profile = googleUser.getBasicProfile();
+
+			localStorage.setItem('userToken', googleUser.getAuthResponse().id_token);
+
+			document.getElementById("login").classList.add("d-none");
+			document.getElementById("logout").classList.remove("d-none");
+
+			document.getElementById("create_petition").classList.remove("d-none");
+			document.getElementById("display_petition").classList.remove("d-none");
+		}
+
+		function signOut() {
+
+			var auth2 = gapi.auth2.getAuthInstance();
+			auth2.signOut().then(function () {
+				localStorage.removeItem('userToken');
+			});
+
+			document.getElementById("login").classList.remove("d-none");
+			document.getElementById("logout").classList.add("d-none");
+
+			document.getElementById("create_petition").classList.add("d-none");
+			document.getElementById("display_petition").classList.add("d-none");
+		}
+
+		var User = {
+
+			email :"",
+		}
+
+		var Petition = {
+			nextPageToken :"",
+			listComplete :[],
+			list :[],
+			current: {
+				name: '',
+				titre: '',
+				description: '',
+				tags: '',
+			},
+
+			getPetitionBySign: function() {
+		        return m.request({
+		            method: "GET",
+		            url: "_ah/api/petitionApi/v1/getPetitionBySign",
+		        })
+		        .then(function(result) {
+		            Petition.list = result.items
+		            m.redraw(true)
+		        })
+		    },
+
+		    getAllPetition: function() {
+		        return m.request({
+		            method: "GET",
+		            url: "_ah/api/petitionApi/v1/getAllPetition?next="+Petition.nextPageToken,
+		        })
+		        .then(function(result) {
+		        	if ('nextPageToken' in result) {
+				        	Petition.nextPageToken= result.nextPageToken
+			            } else {
+			            	Petition.nextPageToken=""
+			            }
+			        if (result.items == null) {
+			        	document.getElementById("morePetition").classList.add("d-none");
+			        }
+			        result.items.map(function(item) {
+			        	Petition.listComplete.push(item);
+			        })
+		            m.redraw(true)
+		        })
+		    },
+
+		    getMyPetition: function() {
+		    	return m.request({
+		            method: "GET",
+		            url: "_ah/api/petitionApi/v1/getMyPetition?userEmail="+User.email,
+		        })
+		        .then(function(result) {
+		            Petition.list = result.items
+		            m.redraw(true)
+		        })
+		    },
+
+		    savePetition: function() {
+		    	return m.request({
+		            method: "POST",
+		            url: "_ah/api/petitionApi/v1/savePetition/" + User.email + "/" + encodeURIComponent(Petition.current.titre) + "/" + encodeURIComponent(Petition.current.description) + "/" + encodeURIComponent(Petition.current.tags),
+		        })
+		        .then(function(result) {
+		            m.route.set("/allPetition");
+		            m.redraw(true)
+		        })
+		    },
+
+		    voterPetition: function() {
+		    	return m.request({
+		            method: "GET",
+		            url: "_ah/api/petitionApi/v1/voterPetition/" + encodeURIComponent(Petition.current.name) + "/" + User.email,
+		        })
+		        .then(function(result) {
+		        	alert("Votre vote viens d'etre prit");
+		            m.route.set("/allPetition");
+		            m.redraw(true)
+		        })
+		    }
+		}
+
+		var PetitionBySign = {
+
+			oninit : function(){
+				Petition.getPetitionBySign()			
+			},
+			 
+			view: function() {
+			 	return m('div', [
+					m('h5',{class:''},"Les 15 pétitions les plus signées"),
+					m('div',{class:'row'}, 
+						[
+							Petition.list.map(function(item) {
+								return m(modeleCardPetition, item)
+							})
+						]
+					)
+				])
+			}
+		}
+
+		var AllPetition = {
+
+			oninit : function(){
+				Petition.getAllPetition()
+			},
+			 
+			view: function() {
+			 	return m('div', [
+					m('h5',{class:''},"La liste complete de nos petitions"),
+					m('div',{class:'row'}, 
+						[
+							Petition.listComplete.map(function(item) {
+								return m(modeleCardPetition, item)
+							})
+						]
+					),
+					m('button', {
+						class:'btn btn-primary m-2',
+						id: 'morePetition',
+						onclick: function() {
+                        	Petition.getAllPetition();
+                    	}}, "Plus de petition")
+				])
+			}
+		}
+
+		var CreatePetition = {
+			view: function() {
+				return m('form', {
+					class:'m-4 col-1à',
+					onsubmit: function(e) {
+						var token = localStorage.getItem('userToken');
+						if(token != "" && token != null) {
+							$.ajax({
+						       url : 'https://oauth2.googleapis.com/tokeninfo?id_token='+token,
+						       type : 'GET',
+						       dataType : 'json',
+						       success : function(data){
+						           if (data.email != "") {
+						           		User.email = data.email;
+						           		Petition.getMyPetition()
+						           } else {
+						           		User.email = "";
+						           		alert("Merci de vous connecter !");
+						           		m.route.set("/");
+						           }
+						       }
+				    		});
+						} else { 
+							User.email = "";
+							alert("Merci de vous connecter !");
+							m.route.set("/");
+						}	
+	                    Petition.savePetition();
+	                }
+				}, 
+					[
+						m('div',{class:'form-group'}, 
+							[
+								m('label', {'for':'petitionTitle'}, "Titre de la pétition"),
+								m('input', {
+									class:'form-control',
+									'type':'text',
+									'placeholder':'Ma petition ...',
+									'id':'petitionTitle',
+									oninput: function (e) {Petition.current.titre = e.target.value},
+	                				value: Petition.current.titre
+	                			})
+							]
+						),
+						m('div',{class:'form-group'}, 
+							[
+								m('label', {'for':'petitionDescritption'}, "Description de la pétition"),
+								m('textarea', {
+									class:'form-control',
+									'row':'3',
+									'id':'petitionDescritption',
+									'placeholder':'Ma description ...',
+									oninput: function (e) {Petition.current.description = e.target.value}
+								})
+							]
+						),
+						m('div',{class:'form-group'}, 
+							[
+								m('label', {'for':'petitionTags'}, "Tags"),
+								m('textarea', {
+									class:'form-control',
+									'row':'3',
+									'id':'petitionTags',
+									'placeholder':'Mes tags...',
+									oninput: function (e) {Petition.current.tags = e.target.value}
+								})
+							]
+						),
+						m('button', {class:'btn btn-primary m-2', 'type':'submit'}, "Enregistrer")
+
+					]
+				)
+			}
+		}
+
+		var MyPetition = {
+
+			oninit : function(){
+				var token = localStorage.getItem('userToken');
+				if(token != "" && token != null) {
+					$.ajax({
+				       url : 'https://oauth2.googleapis.com/tokeninfo?id_token='+token,
+				       type : 'GET',
+				       dataType : 'json',
+				       success : function(data){
+				           if (data.email) {
+				           		User.email = data.email;
+				           		Petition.getMyPetition()
+				           } else {
+				           		User.email = "";
+				           		alert("Merci de vous connecter !");
+				           		m.route.set("/");
+				           }
+				       }
+		    		});
+				} else { 
+					User.email = "";
+					alert("Merci de vous connecter !");
+					m.route.set("/");
+				}	
+			},
+			 
+			view: function() {
+			 	return m('div', [
+					m('h5',{class:''},"La liste complete de vos petitions"),
+					m('div',{class:'row'}, 
+						[
+							Petition.list.map(function(item) {
+								return m('div',{class:'card col-3 m-4','style':{'width':'18rem'}},
+									[
+										m('div',{class:'card-body'}, 
+											[
+												m('h5',{class:'card-title'}, item.properties.titre),
+												m('h6',{class:'card-subtitle mb-2 text-muted'}, item.properties.tags),
+												m('p',{class:'card-text'}, item.properties.description),
+												m('p',{class:'card-text'}, "Nombre de signataire : " + item.properties.compteur),
+												m('p',{class:'card-text'}, "Date de création : " + item.properties.dateCreation),
+												m('button', {
+													class:'btn btn-primary m-2',
+													'data-id': item.properties.namePet,
+													onclick: function() {
+														Petition.current.name = this.getAttribute('data-id');
+														var token = localStorage.getItem('userToken');
+														if(token != "" && token != null) {
+															$.ajax({
+														       url : 'https://oauth2.googleapis.com/tokeninfo?id_token='+token,
+														       type : 'GET',
+														       dataType : 'json',
+														       success : function(data){
+														           if (data.email) {
+														           		User.email = data.email;
+														           		$.ajax({
+																	       url : "_ah/api/petitionApi/v1/checkVotePetition/" + encodeURIComponent(Petition.current.name) + "/" + User.email,
+																	       type : 'GET',
+																	       dataType : 'json',
+																	       success : function(data){
+																	           if (!data) {
+																	           		Petition.voterPetition();
+																	           } else {
+																	           		alert("Vous avez deja voter cette petition");
+																	           }
+																	       }
+															    		});
+														           } else {
+														           		User.email = "";
+														           		alert("Merci de vous connecter pour voter!");
+														           }
+														       }
+												    		});
+														} else { 
+															User.email = "";
+															alert("Merci de vous connecter pour voter !");
+														}
+							                    	}}, "Voter"),
+											]
+										)
+									]
+								)
+							})
+						]
+					),
+				])
+			}
+		}
+
+		var modeleCardPetition = {
+
+			view: function(item) {
+				return m('div',{class:'card col-3 m-4','style':{'width':'18rem'}},
+					[
+						m('div',{class:'card-body'}, 
+							[
+								m('h5',{class:'card-title'}, item.attrs.properties.titre),
+								m('h6',{class:'card-subtitle mb-2 text-muted'}, item.attrs.properties.tags),
+								m('p',{class:'card-text'}, item.attrs.properties.description),
+								m('p',{class:'card-text'}, "Nombre de signataire : " + item.attrs.properties.compteur),
+								m('p',{class:'card-text'}, "Date de création : " + item.attrs.properties.dateCreation),
+								m('button', {
+													class:'btn btn-primary m-2',
+													'data-id': item.attrs.properties.namePet,
+													onclick: function() {
+														Petition.current.name = this.getAttribute('data-id');
+														var token = localStorage.getItem('userToken');
+														if(token != "" && token != null) {
+															$.ajax({
+														       url : 'https://oauth2.googleapis.com/tokeninfo?id_token='+token,
+														       type : 'GET',
+														       dataType : 'json', 
+														       success : function(data){														       	
+														           if (data.email) {
+														           		User.email = data.email;
+														           		$.ajax({
+																	       url : "_ah/api/petitionApi/v1/checkVotePetition/" + encodeURIComponent(Petition.current.name) + "/" + User.email,
+																	       type : 'GET',
+																	       dataType : 'json',
+																	       success : function(data){
+																	           if (!data) {
+																	           		Petition.voterPetition();
+																	           } else {
+																	           		alert("Vous avez deja voter cette petition");
+																	           }
+																	       }
+															    		});
+														           } else {
+														           		User.email = "";
+														           		alert("Merci de vous connecter pour voter!");
+														           }
+														       }
+												    		});
+														} else { 
+															User.email = "";
+															alert("Merci de vous connecter pour voter !");
+														}
+							                    	}}, "Voter"),
+							]
+						)
+					]
+				)
+			}
+		}
+
+		var elem = 	document.getElementById("page_data");
+		m.route(elem, "/", {
+			"/": PetitionBySign,
+			"/allPetition": AllPetition,
+			"/createPetition": CreatePetition,
+			"/myPetition": MyPetition,
+		})
+	</script>
+
+	<footer class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<div class="collapse navbar-collapse text-muted">© 2021 M1-MIAGE</div>
+		<div class="collapse navbar-collapse text-muted">Matthias Meunier</div>
+		<div class="collapse navbar-collapse text-muted">Alexandre Cellier</div>
+		<a class="collapse navbar-collapse" href="#">
+			<img src="img/github.png" width="30" height="30" alt="">
+		</a>
+	</footer>
+</body>
+</html>
